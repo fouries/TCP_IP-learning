@@ -1,9 +1,9 @@
 Chapter 1
-***
+===
 1.1 理解网络变编程和套接字 
-****
- 一.构建接电话套接字
- *****
+---
+ 一.构建接电话套接字  
+ 
     1.调用socket函数（安装电话机）时进行的对话  
       问：“接电话需要准备什么？”  
       答：“当然是电话机”  
@@ -30,14 +30,14 @@ Chapter 1
         --> 成功时返回文件描述符，失败时返回-1。  
 
 二.构建打电话套接字
-*****
+
     1.调用的时客户端套接字  
       #include <sys/socket.h>  
       int connect(int sockfd, struct sockaddr* serv_addr, socklen_t addrlen);  
         --> 成功时返回0，失败时返回-1。  
 
 1.2 基于Linux的文件操作  
-****
+---
     1.底层的文件访问(Low-level File Access)和文件描述符(File Descriptor)  
       文件描述符           对象  
             0             标准输入：Standard Input  
@@ -62,20 +62,24 @@ Chapter 1
       ssize_t read(int fd, void *buf, size_t nbytes); // fd 显示数据接收对象的文件描述符；buf 要保存接收数据的缓冲地址值；nbytes 要接收数据的最大字节数  
           --> 成功时返回接收字节数(但遇到文件结尾则返回0)， 失败时返回-1。  
 
-***Chapter 2***  
+Chapter 2  
+===
 2.1 套接字协议及其数据传输特性
+---
     1.创建套接字
       #include <sys/socket.h>
       int socket(int domain, int type, int protocol); // domain 套接字中的使用的协议族(Protocol Family)信息；
         --> 成功时返回文件描述符，失败时返回-1。  
 2.2 协议族(Protocol Family)
-"""  　　　　　表２－１　头文件sys/socket.h中声明的协议族
-   名称                    　　　　　　协议族
-   PF_INET                　　　　IPv4互联网协议族
-   PF_INET6               　　　　IPv6互联网协议族
-   PF_LOCAL               　　　　本地通信的UNIX协议族
-   PF_PACKET              　　　　底层套接字的协议族
-   PF_IPX                 　　　　IPX Novell协议族 """
+---
+    表２－１　 头文件sys/socket.h中声明的协议族
+     名称                    　　　　　　协议族
+    PF_INET                　　　　IPv4互联网协议族
+    PF_INET6               　　　　IPv6互联网协议族
+    PF_LOCAL               　　　　本地通信的UNIX协议族
+    PF_PACKET              　　　　底层套接字的协议族
+    PF_IPX                 　　　　IPX Novell协议族
+ 
 2.3 套接字类型(Type)  
     1.套接字类型1：面向连接的套接字(SOCK_STREAM) 
       如果向socket函数的第二个参数传递SOCK_STREAM，则将创建面向连接的套接字。（2位工人通过传送带传递物品）  
@@ -99,12 +103,12 @@ Chapter 1
       socket函数的第三个参数，该参数决定最终采用的协议。  
       “IPv4协议族中面向连接的套接字”  
       IPv4与网络地址系统相关，关于这点将给出单独说明，目前只需记住：本书是基于IPv4展开的。参数PF_INRT指IPv4网络协议族， SOCK_STREAM是面
-      向连接的数据传输。满足这2个条件的协议只有IPPROTO_TCP，因此可以如下调用socket函数创建套接字，这种套接字称为TCP套接字。
-          int tcp_socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+      向连接的数据传输。满足这2个条件的协议只有IPPROTO_TCP，因此可以如下调用socket函数创建套接字，这种套接字称为TCP套接字。 
+          *int tcp_socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);*
       “IPv4协议中面向消息的套接字”
       SOCK_DGRAM指的是面向消息的数据传输方式，满足上述条件的协议只有IPPROTO_UDP。因此可以如下调用socket函数创建套接字，这种套接字称为UDP
       套接字。  
-          int udp_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);  
+          *int udp_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);*  
     4.面向连接的套接字：TCP套接字示例
         * hello_server.c --> tcp_server.c：无变化！
         * hello_client.c --> tcp_client.c：更改read函数调用方式！
