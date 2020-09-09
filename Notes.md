@@ -1,6 +1,9 @@
-#***Chapter 1***  
-##1.1 理解网络变编程和套接字 
- ###一.构建接电话套接字  
+Chapter 1
+***
+1.1 理解网络变编程和套接字 
+****
+ 一.构建接电话套接字
+ *****
     1.调用socket函数（安装电话机）时进行的对话  
       问：“接电话需要准备什么？”  
       答：“当然是电话机”  
@@ -26,13 +29,15 @@
       int accept(int sockfd, struct sockaddr*addr, socklen_t *addrlen);  
         --> 成功时返回文件描述符，失败时返回-1。  
 
-###二.构建打电话套接字  
+二.构建打电话套接字
+*****
     1.调用的时客户端套接字  
       #include <sys/socket.h>  
       int connect(int sockfd, struct sockaddr* serv_addr, socklen_t addrlen);  
         --> 成功时返回0，失败时返回-1。  
 
-##1.2 基于Linux的文件操作  
+1.2 基于Linux的文件操作  
+****
     1.底层的文件访问(Low-level File Access)和文件描述符(File Descriptor)  
       文件描述符           对象  
             0             标准输入：Standard Input  
@@ -42,7 +47,6 @@
       #include <sys/types.h>
       #include <sys/stat.h>
       #include <fcntl.h>
-
       int open(const char *path, int flag);   // path 文件名的字符串地址；  flag 文件打开模式信息
           --> 成功时返回文件描述符，失败时返回-1。
     3.关闭文件
