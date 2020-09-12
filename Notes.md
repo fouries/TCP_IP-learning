@@ -105,16 +105,61 @@ Chapter 2
       “IPv4协议族中面向连接的套接字”  
       IPv4与网络地址系统相关，关于这点将给出单独说明，目前只需记住：本书是基于IPv4展开的。参数PF_INRT指IPv4网络协议族， SOCK_STREAM是面
       向连接的数据传输。满足这2个条件的协议只有IPPROTO_TCP，因此可以如下调用socket函数创建套接字，这种套接字称为TCP套接字。 
-          *int tcp_socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);*
+          int tcp_socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
       “IPv4协议中面向消息的套接字”
       SOCK_DGRAM指的是面向消息的数据传输方式，满足上述条件的协议只有IPPROTO_UDP。因此可以如下调用socket函数创建套接字，这种套接字称为UDP
       套接字。  
-          *int udp_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);*  
+          int udp_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP); 
     4.面向连接的套接字：TCP套接字示例
         * hello_server.c --> tcp_server.c：无变化！
         * hello_client.c --> tcp_client.c：更改read函数调用方式！
       验证TCP套接字的如下特性：
         1.“数据的传输不存在数据边界。” 让write函数调用次数不同于read函数的调用次数。因此，在客户端中分多次调用read函数以接收服务器端发送的全部数据。  
-        
-    　
-      
+
+Chapter 3  
+===
+3.1 分配给套接字的IP地址与端口号
+---
+    *IP是Internet Protocol(网络协议)的缩写，是为收发网络数据而分配给计算机的值。端口号并非赋予计算机的值，而是为区分程序中创建的套接字而分配给套接字*
+    *的序号*
+
+    1.网络地址(Internet Address)
+		为使计算机连接到网络并收发数据，必须向其分配IP地址。IP地址分为两类。
+		* IPv4(Internet Protocol version 4)		4字节地址族
+		* IPv6(Internet Protocol version 6)     16字节地址族
+		路由器和交换机:  
+		若想构建网络，需要一种物理设备完成外网与本网主机之间的数据交换，这种设备便是路由器或者交换机。他们实际上也是一种计算机，只不过是为特殊目的而设计运行的，
+		因此有了别名。所以，如果在我们使用的计算机上安装适当的软件，也可以将其用作交换机。另外，交换机比路由器功能要简单一些，而实际用途差别不大。	
+	2.网络地址分类与主机地址边界
+		只需通过IP地址的第一个字节即可判断网络地址占用的字节数，因为我们根据IP地址的边界区别网络地址，如下所示。
+		* A类地址的首字节范围：0～127            以0开始
+		* B类地址的首字节范围:128~191            前2位以10开始
+		* C类地址的首字节范围：192~223           前3位以110开始
+		正因如此，通过套接字收发数据时，数据传到网络后即可轻松找到正确的主机。
+	3.用于区分套接字的端口号
+		IP用于区分计算机，只要有IP地址就能向主机传输数据，但仅凭这些无法传输给最终的应用程序。
+		计算机中一般配有NIC(Network Interface Card，网络接口卡)数据传输设备。通过NIC向计算机内部传输数据时会用到IP。操作系统负责把传递到内部的数据适当分配
+		套接字，这时就要利用端口号。也就是说，通过NIC接收的数据内有端口号，操作系统正是参考此端口号把数据传输给相应端口的套接字。
+        端口号就是在同一操作系统内为区分不同套接字而设置的，因此无法将1个端口号分配给不同的套接字。另外，端口号由16位构成，可分配端口号范围从0-65535。但0-1023
+		是知名端口(Well-known PORT),一般分配给特定应用程序，所以应当分配范围之外的值。端口不能重复，但TCP套接字和UDP套接字不会公用端口号，所以允许重复。
+
+3.2 地址信息的表示
+---
+	应用程序中使用的IP地址和端口号以结构体的形式给出定义。本书将以IPv4为中心，围绕此结构体讨论目标地址的表示方法。
+
+	1.表示IPv4地址的结构体
+		struct sockaddr_in
+		{
+			sa_family_t 	sin_family;		//地址族（Address Family）
+			uint16_t 		sin_port;		//16位TCP/UDP端口号
+			struct in_addr  sin_addr;		//32位IP地址
+			char 			sin_zero[8];	//不使用
+		};
+
+		该结构体中提到的另一个结构体in_addr定义如下，它用来存放32位IP地址。
+		struct in_addr
+		{
+			In_addr_t		s_addr;				//32位IPv4地址
+		}；
+	
+	

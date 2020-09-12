@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
-
 void error_handling(char* message);
 
 int main(int argc, char* argv[])
@@ -14,6 +13,7 @@ int main(int argc, char* argv[])
     char message[30];
     int str_len = 0;
     int idx = 0, read_len = 0;
+    int time=0;
 
     if(argc != 3)
     {
@@ -38,8 +38,10 @@ int main(int argc, char* argv[])
         if(str_len == -1)
             error_handling("read() error!");
         str_len += read_len;                          // 执行该语句时，变量read_len的值始终为1，因为第29行每次读取1个字节。跳出while循环后，str_len中存有读取的总字节数。
+
+        sleep(1);
+        printf("Wait time %d s\n", ++time);
     }
-    
     printf("Message from server : %s \n", message);
     printf("Function read call count: %d \n", str_len);
     close(sock);
