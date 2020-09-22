@@ -18,3 +18,4 @@
 (6).让CPU执行多余任务以延迟代码运行的方式称为 “Busy Waiting”。  
       *for(i=0;i<3000;i++)*
         *printf("Wait time %d \n",i);*
+        
