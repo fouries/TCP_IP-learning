@@ -155,19 +155,19 @@ Chapter 3
     应用程序中使用的IP地址和端口号以结构体的形式给出定义。本书将以IPv4为中心，围绕此结构体讨论目标地址的表示方法。
 
     1.表示IPv4地址的结构体  
-    struct sockaddr_in      
-    {
-        sa_family_t       sin_family;   //地址族（Address Family）  
-        uint16_t          sin_port;     //16位TCP/UDP端口号  
-        struct in_addr    sin_addr;     //32位IP地址  
-        char              sin_zero[8];  //不使用  
-    };  
+      struct sockaddr_in      
+      {
+          sa_family_t       sin_family;   //地址族（Address Family）  
+          uint16_t          sin_port;     //16位TCP/UDP端口号  
+          struct in_addr    sin_addr;     //32位IP地址  
+          char              sin_zero[8];  //不使用  
+      };  
 
-    该结构体中提到的另一个结构体in_addr定义如下，它用来存放32位IP地址。
-    struct in_addr
-    {
-      in_addr_t           s_addr;       //32位IPv4地址
-    }；
+      该结构体中提到的另一个结构体in_addr定义如下，它用来存放32位IP地址。
+      struct in_addr
+      {
+        in_addr_t           s_addr;       //32位IPv4地址
+      }；
 
 
                               表3-1 POSIX中定义的数据类型
@@ -219,9 +219,9 @@ Chapter 3
 3.3 网络字节序与地址变换
 ---
     不同的CPU中，4字节整数型值1在内存空间的保存方式是不同的。
-    00000000 00000000 00000000 00000001
+    00000000 00000000 00000000 00000001       大端序
     有些CPU以这种顺序保存到内存，另外一些CPU则以倒序保存。
-    00000001 00000000 00000000 00000000
+    00000001 00000000 00000000 00000000       小端序
 
     1.字节序（Order）与网络字节序
       CPU向内存保存数据的方式有2种，这意味着CPU解析数据的方式也有2种。
@@ -278,3 +278,31 @@ Chapter 3
         #include <arpa/inet.h>
         char * inet_ntoa(struct in_addr adr);
             --> 成功时返回转换的字符串地址值，失败时返回-1。
+      该函数将通过参数传入的整数型IP地址转换为字符串格式返回。返回值类型为char指针。
+      若需要长期保存，则应将字符串复制到其他内存空间。    inet_ntoa.c
+    2.网络地址初始化
+      结合前面所学的内容，现在介绍套接字创建过程中常见的网络地址信息初始化方法。
+
+      struct sockaddr_in addr;
+      char* ser_ip = "211.217.168.13";    // 声明 IP 地址字符串
+      char* serv_port = "9190";           // 声明端口号字符串
+      memset(&addr, 0, sizeof(addr));     // 结构体变量addr的所有成员初始化为 0
+      addr.sin_family = AF_INET;          // 指定地址族
+      addr.sin_addr.s_addr = inet_addr(serv_ip);    // 基于字符串的IP地址初始化
+      addr.sin_port = htons(atoi(serv_port));       // 基于字符串的端口号初始化
+
+      上述代码中，memset函数将每个字节初始化为同一值：第一个参数为结构体变量addr的地址值，即初始化对象为addr;第二个参数为0，因此初始化为0；
+      最后一个参数中传入addr的长度，因此addr的所有字节均初始化为0。这么做是为了将sockaddr_in结构体的成员sin_zero初始化为0。
+      总之，上述代码利用字符串格式的IP地址和端口号初始化了sockaddr_in结构体变量。
+    3.客户端地址信息初始化
+      上述网络地址信息初始化过程主要针对服务器端。给套接字分配IP地址和端口号主要时为了下面这件事做准备：
+        “请把进入IP 211.217.168.13、9190端口的数据传给我！”
+      反观客户端中连接请求如下：
+        “请连接到IP 211.217.168.13、9190端口！”
+      请求方法不同意味着调用的函数也不同。服务器端的准备工作通过bind函数完成，而客户端则通过connect函数完成。
+      因此，函数调用前需准备的地址值类型也不同。服务器端声明sockaddr_in结构体变量，将其初始化为为赋予服务器端IP和套接字的端口号，然后调用bind
+      函数；而客户端则声明sockaddr_in结构体，并初始化为要与之连接的服务器端套接字的IP和端口号，然后调用connect函数。
+    4.INADDR_ANY
+      
+      
+
