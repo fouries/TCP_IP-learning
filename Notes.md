@@ -1,4 +1,4 @@
-Chapter 1  
+Chapter 1  理解网络变成和套接字
 ===
 1.1 理解网络变编程和套接字
 ---
@@ -65,7 +65,7 @@ Chapter 1
           --> 成功时返回接收字节数(但遇到文件结尾则返回0)， 失败时返回-1。 
 
     * 数据类型_t 表示元数据类型，为操作系统定义的, 在 sys/types.h文件中一般由typedef声明定义
-Chapter 2  
+Chapter 2  套接字类型与协议设置
 ===
 2.1 套接字协议及其数据传输特性
 ---
@@ -120,7 +120,7 @@ Chapter 2
         1.“数据的传输不存在数据边界。” 让write函数调用次数不同于read函数的调用次数。因此，在客户端中分多次调用read函数以接收服务器端发送的
         全部数据。  
 
-Chapter 3  
+Chapter 3  地址族与数据序列
 ===
 3.1 分配给套接字的IP地址与端口号
 ---
@@ -303,6 +303,21 @@ Chapter 3
       因此，函数调用前需准备的地址值类型也不同。服务器端声明sockaddr_in结构体变量，将其初始化为为赋予服务器端IP和套接字的端口号，然后调用bind
       函数；而客户端则声明sockaddr_in结构体，并初始化为要与之连接的服务器端套接字的IP和端口号，然后调用connect函数。
     4.INADDR_ANY
-      
-      
+      每次创建服务器端套接字都要输入IP地址会有些繁琐，此时可如下初始化地址信息。
 
+      struct sockaddr_in addr;
+      char * serv_port = "9190";
+      memset(&addr, 0, sizeof(addr));
+      addr.sin_family = AF_INET;
+      addr.sin_port.s_addr = htonl(INADDR_ANY);
+      addr.sin_port = htons(atoi(serv_port));
+
+      与之前方式最大的区别在于，利用常数INADDR_ANY分配服务器端的IP地址。若采用这种方式，则可自动获取运行服务器端的计算机IP地址，不必亲自输入。
+      若同一计算机中已分配多个IP地址，只要端口号一致，就可以从不同IP地址接收数据。
+    ５.第1章的 hello_server.c、 hello_client.c运行过程
+      ./hserver 9190  
+      通过代码可知，向main函数传递9190为端口号。通过此端口号创建服务器端套接字并运行程序，但未传递IP地址，因为可以通过INADDR_ANY指定IP地址。
+      ./hclient 127.0.0.1 9190
+      127.0.0.1是会送地址（loopback address）,指的是计算机自身IP地址。
+      如果服务器端和客户端分别在2台计算计中运行，则可以输入服务器端IP地址。
+      
