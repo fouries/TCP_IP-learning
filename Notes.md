@@ -143,7 +143,7 @@ Chapter 3  地址族与数据序列
 		正因如此，通过套接字收发数据时，数据传到网络后即可轻松找到正确的主机。
 	3.用于区分套接字的端口号
 		IP用于区分计算机，只要有IP地址就能向主机传输数据，但仅凭这些无法传输给最终的应用程序。
-		计算机中一般配有NIC(Network Interface Card，网络接口卡)数据传输设备。通过NIC向计算机内部传输数据时会用到IP。操作系统负责把传
+		计算机中一般配有NIC(Network Interface Card，网络接口卡(网络适配器、网卡))数据传输设备。通过NIC向计算机内部传输数据时会用到IP。操作系统负责把传
     递到内部的数据适当分配套接字，这时就要利用端口号。也就是说，通过NIC接收的数据内有端口号，操作系统正是参考此端口号把数据传输给相
     应端口的套接字。
         端口号就是在同一操作系统内为区分不同套接字而设置的，因此无法将1个端口号分配给不同的套接字。另外，端口号由16位构成，可分配端
@@ -280,20 +280,22 @@ Chapter 3  地址族与数据序列
             --> 成功时返回转换的字符串地址值，失败时返回-1。
       该函数将通过参数传入的整数型IP地址转换为字符串格式返回。返回值类型为char指针。
       若需要长期保存，则应将字符串复制到其他内存空间。    inet_ntoa.c
+
     2.网络地址初始化
       结合前面所学的内容，现在介绍套接字创建过程中常见的网络地址信息初始化方法。
 
-      struct sockaddr_in addr;
-      char* ser_ip = "211.217.168.13";    // 声明 IP 地址字符串
-      char* serv_port = "9190";           // 声明端口号字符串
-      memset(&addr, 0, sizeof(addr));     // 结构体变量addr的所有成员初始化为 0
-      addr.sin_family = AF_INET;          // 指定地址族
-      addr.sin_addr.s_addr = inet_addr(serv_ip);    // 基于字符串的IP地址初始化
-      addr.sin_port = htons(atoi(serv_port));       // 基于字符串的端口号初始化
+        struct sockaddr_in addr;
+        char* ser_ip = "211.217.168.13";    // 声明 IP 地址字符串
+        char* serv_port = "9190";           // 声明端口号字符串
+        memset(&addr, 0, sizeof(addr));     // 结构体变量addr的所有成员初始化为 0
+        addr.sin_family = AF_INET;          // 指定地址族
+        addr.sin_addr.s_addr = inet_addr(serv_ip);    // 基于字符串的IP地址初始化
+        addr.sin_port = htons(atoi(serv_port));       // 基于字符串的端口号初始化
 
       上述代码中，memset函数将每个字节初始化为同一值：第一个参数为结构体变量addr的地址值，即初始化对象为addr;第二个参数为0，因此初始化为0；
       最后一个参数中传入addr的长度，因此addr的所有字节均初始化为0。这么做是为了将sockaddr_in结构体的成员sin_zero初始化为0。
       总之，上述代码利用字符串格式的IP地址和端口号初始化了sockaddr_in结构体变量。
+
     3.客户端地址信息初始化
       上述网络地址信息初始化过程主要针对服务器端。给套接字分配IP地址和端口号主要时为了下面这件事做准备：
         “请把进入IP 211.217.168.13、9190端口的数据传给我！”
@@ -302,22 +304,71 @@ Chapter 3  地址族与数据序列
       请求方法不同意味着调用的函数也不同。服务器端的准备工作通过bind函数完成，而客户端则通过connect函数完成。
       因此，函数调用前需准备的地址值类型也不同。服务器端声明sockaddr_in结构体变量，将其初始化为为赋予服务器端IP和套接字的端口号，然后调用bind
       函数；而客户端则声明sockaddr_in结构体，并初始化为要与之连接的服务器端套接字的IP和端口号，然后调用connect函数。
+
     4.INADDR_ANY
       每次创建服务器端套接字都要输入IP地址会有些繁琐，此时可如下初始化地址信息。
 
-      struct sockaddr_in addr;
-      char * serv_port = "9190";
-      memset(&addr, 0, sizeof(addr));
-      addr.sin_family = AF_INET;
-      addr.sin_port.s_addr = htonl(INADDR_ANY);
-      addr.sin_port = htons(atoi(serv_port));
+        struct sockaddr_in addr;
+        char * serv_port = "9190";
+        memset(&addr, 0, sizeof(addr));
+        addr.sin_family = AF_INET;
+        addr.sin_port.s_addr = htonl(INADDR_ANY);
+        addr.sin_port = htons(atoi(serv_port));
 
       与之前方式最大的区别在于，利用常数INADDR_ANY分配服务器端的IP地址。若采用这种方式，则可自动获取运行服务器端的计算机IP地址，不必亲自输入。
       若同一计算机中已分配多个IP地址，只要端口号一致，就可以从不同IP地址接收数据。
+
     ５.第1章的 hello_server.c、 hello_client.c运行过程
-      ./hserver 9190  
+        ./hserver 9190  
       通过代码可知，向main函数传递9190为端口号。通过此端口号创建服务器端套接字并运行程序，但未传递IP地址，因为可以通过INADDR_ANY指定IP地址。
-      ./hclient 127.0.0.1 9190
+        ./hclient 127.0.0.1 9190
       127.0.0.1是会送地址（loopback address）,指的是计算机自身IP地址。
       如果服务器端和客户端分别在2台计算计中运行，则可以输入服务器端IP地址。
-      
+
+    6.向套接字分配网络地址
+      前面讨论了sockaddr_in结构体的初始化方法，接下来就把初始化的地址信息分配给套接字。bind函数负责这项操作。
+        #include<sys/socket.h>
+        int bind(int sockfd, struct sockaddr_in * myaddr, socklen_t addrlen);  // sockfd: 要分配地址信息（IP地址和端口号）的套接字文件描述符。
+            --> 成功时返回0， 失败时返回-1。                                       // myaddr: 存有地址信息的结构体变量地址值。
+                                                                               // addrlen: 第二个结构体变量的长度。
+      如果此函数调用成功，则将第二个参数指定的地址信息分配给第一个参数中的相应套接字。下面给出服务器端常见套接字初始化过程。
+
+        int serv_sock;
+        struct sockaddr_in serv_addr;
+        char* serv_port = "9190";
+
+        /* 创建服务器端套接字（监听套接字） */
+        serv_sock = socket(PF_INET, SOCK_STREAM, 0);
+
+        /* 地址信息初始化 */
+        memset(&serv_addr, 0, sizeof(serv_addr));
+        serv_addr.sin_family = AF_INET;
+        serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+        serv_addr.sin_port = htons(atoi(serv_port));
+
+        /* 分配地址信息 */
+        bind(serv_sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+        ......
+
+        服务器端代码结构默认如上，当然还有未显示的异常处理代码。
+
+3.5 基于Windows的实现
+---
+    Windows中同样存在sockaddr_in结构体及各种变换函数，而且名称、使用方法及含义都相同。
+
+    1.函数 htons、htonl在 Windows中的使用
+      source:   endian_conv_win.c
+
+    2.函数 inet_addr、inet_ntoa在Windows中的使用
+      Windows中不存在 inet_aton函数，故省略。
+
+    3.在Windows环境下向套接字分配网络地址
+      Windows中向套接字分配网络地址的过程与Linux中完全相同，因为bind函数的含义、参数及返回类型完全一致。
+    
+    4.WSAStringToAddress & WSAAddressToString
+
+Chapter 4  基于TCP的服务器端/客户端(1)
+===
+4.1 理解 TCP和 UDP
+---
+    
