@@ -13,6 +13,7 @@ int main(int argc, char *argv[])
 	if(WSAStartup(MAKEWORD(2, 2), &wsaData)!=0)
 		ErrorHandling("WSAStartup() error!"); 
 	
+
 	net_port=htons(host_port);
 	net_addr=htonl(host_addr);
 	
