@@ -330,7 +330,7 @@ Chapter 3  地址族与数据序列
         #include<sys/socket.h>
         int bind(int sockfd, struct sockaddr_in * myaddr, socklen_t addrlen);  
             --> 成功时返回0， 失败时返回-1。                              // sockfd: 要分配地址信息（IP地址和端口号）的套接字文件描述符。  
-									                                                      // myaddr: 存有地址信息的结构体变量地址值。
+									// myaddr: 存有地址信息的结构体变量地址值。
                                                                         // addrlen: 第二个结构体变量的长度。
       如果此函数调用成功，则将第二个参数指定的地址信息分配给第一个参数中的相应套接字。下面给出服务器端常见套接字初始化过程。
 
