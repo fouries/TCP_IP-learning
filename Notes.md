@@ -374,4 +374,10 @@ Chapter 4  基于TCP的服务器端/客户端(1)
 ===
 4.1 理解 TCP和 UDP
 ---
+    根据数据传输方式的不同，基于网络协议的套接字一般分为TCP套接字和UDP套接字。因为TCP套接字是面向连接的，因此又称基于流（stream）的套接字。
+    TCP是Transmision Control Protocol（传输控制协议）的简写，意为“对数据传输过程的控制”。
     
+    1.TCP/IP 协议栈
+    讲解TCP前先介绍TCP所属的TCP/IP协议栈(Stack, 层)，如图 4-1所示。
+    
+    [![](/Img/图4-1.png "图4-1 TCP/IP协议栈")][TCP/IP]
