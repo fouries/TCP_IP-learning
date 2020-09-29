@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
     if(serv_sock == -1)
         error_handling("socket() error");
     
-    memset(&serv_addr, 0, sizeof(serv_addr));
+    memset(&serv_addr, 0, sizeof(serv_addr));         // serv_addr内存地址，前sizeof(serv_addr)个字符填充0
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     serv_addr.sin_port = htons(atoi(argv[1]));
