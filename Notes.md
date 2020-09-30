@@ -545,4 +545,32 @@ Chapter 4  基于TCP的服务器端/客户端(1)
         * 服务器端将接收到的字符串数据传回客户端，即“回声”。
         * 服务器端与客户端之间的字符串回声一直执行到客户端输入Q为止。
     
-    回声服务器端代码。
+    回声服务器端代码。 echo_server.c
+
+    3.回声客户端存在的问题
+      下列是 echo_client.c的第45～48行代码。
+
+        write(sock, message, strlen(message));
+        str_len = read(sock, message, strlen(message));
+        message[str_len] =0;
+        printf("Message from server: %s", message);
+
+      以上代码有个错误假设： “每次调用read、write函数时都会以字符串为单元执行实际的I/O操作。”
+      “字符串太长了，需要分2个数据包发送！”
+      服务器端希望通过调用1次write函数传输数据，但如果数据太大，操作系统就有可能把数据分成多个数据包发送到客户端。另外在此过程中，
+    客户端有可能在尚未收到全部数据包时就调用read函数。
+
+4.4 基于 Windows的实现
+---
+    1.基于 Windows的回声服务器端
+      为了将Linux平台下的示例转化成Windows平台示例，需要记住下4点。
+      × 通过 WSAStartup、WSACleanup函数初始化并清除套接字相关库。
+      × 把数据类型和变量名切换成Windows风格。
+      × 数据传输中用recv、send函数而非read、write函数。
+      × 关闭套接字时用closesocket函数而非close函数。
+                echo_server_win.c
+
+    2.基于 Windows的回声客户端
+                echo_client_win.c
+    
+    
