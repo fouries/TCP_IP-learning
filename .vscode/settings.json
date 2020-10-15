@@ -3,6 +3,18 @@
         "fstream": "cpp",
         "ctime": "c",
         "chrono": "c",
-        "exception": "cpp"
+        "exception": "cpp",
+        "cstdio": "cpp",
+        "*.tcc": "cpp",
+        "functional": "cpp",
+        "deque": "cpp",
+        "string": "cpp",
+        "vector": "cpp",
+        "iosfwd": "cpp",
+        "istream": "cpp",
+        "limits": "cpp",
+        "sstream": "cpp",
+        "streambuf": "cpp",
+        "cstdlib": "cpp"
     }
 }
