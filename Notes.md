@@ -573,7 +573,7 @@ Chapter 4  基于TCP的服务器端/客户端(1)
     2.基于 Windows的回声客户端
                 echo_client_win.c
 
-Chapter 4  基于TCP的服务器端/客户端(1)
+Chapter 5  基于TCP的服务器端/客户端(1)
 ===
 5.1 回声客户端的完美实现
 ---
