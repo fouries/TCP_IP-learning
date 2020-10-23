@@ -46,10 +46,10 @@ int  main(int argc, char* argv[])
     {
         opnd_cnt = 0;
         clnt_sock = accept(serv_sock, (struct sockaddr*) &clnt_addr, &clnt_addr_sz);
-        read(clnt_sock, &opnd_cnt, 1);      // 读 clnt_sock中 运算数个数到 opnd_cnt
+        read(clnt_sock, &opnd_cnt, 1);      // 读 clnt_sock所指的文件中 运算数个数到 opnd_cnt
         
         recv_len = 0;
-        while((opnd_cnt*OPSZ+1)>recv_len)   // 将 clnt_sock中的 operands和 operator全部读出到opinfo[]
+        while((opnd_cnt*OPSZ+1)>recv_len)   // 将 clnt_sock所指向的文件中 operands和 operator全部读出到opinfo[]
         {
             recv_cnt = read(clnt_sock, &opinfo[recv_len], BUF_SIZE-1);
             recv_len += recv_cnt;
