@@ -573,7 +573,7 @@ Chapter 4  基于TCP的服务器端/客户端(1)
     2.基于 Windows的回声客户端
                 echo_client_win.c
 
-Chapter 5  基于TCP的服务器端/客户端(1)
+Chapter 5  基于TCP的服务器端/客户端(2)
 ===
 5.1 回声客户端的完美实现
 ---
@@ -628,3 +628,52 @@ Chapter 5  基于TCP的服务器端/客户端(1)
 ---
         op_server_win.c   op_client_win.c
 
+Chapter 6  基于UDP的服务器端/客户端
+===
+6.1 理解UDP
+---
+    1.UDP套接字的特点
+      类比寄信，UDP 是一种不可靠的数据传输服务。 
+      TCP 在不可靠的 IP层进行流控制，而 UDP就缺少这种流控制机制。流控制是区分 UDP和 TCP最重要的标志。
+    
+    2.UDP内部的原理
+      UDP 最重要的作用就是根据端口号将传到主机的数据包交付给最终的 UDP套接字。
+    
+    3.UDP的高效使用
+      UDP 也具有一定的可靠性。 如果收发的数据量小但需要频繁连接时，UDP比TCP高效。
+6.2 实现基于UDP的服务器端/客户端
+---
+    1.UDP中的服务器端和客户端没有连接
+      与TCP不同，无需经过连接过程。也就是说无需调用TCP连接过程中调用的listen函数和accept函数。
+      UDP中只有创建套接字的过程和数据交换过程。
+    
+    2.UDP服务器端和客户端均需1个套接字
+      收发信件时使用的邮筒可以比喻为UDP套接字。只要附近有一个邮筒，就可以通过它向任意地址寄出信件。
+      1个UDP套接字就能和多台主机通信。
+    
+    3.基于UDP的数据I/O函数
+      TCP套接字将保持与对方套接字的连接。但UDP不会保持连接状态（UDP套接字只有简单的邮筒功能），因此每次传输数据都要添加目标地址信息。
+    
+    #include <sys/socket.h>
+    ssize_t sendto(int sock, void *buff, size_t nbytes, int flags, struct sockaddr *to, socklen_t addrlen);
+          --> 成功时返回传输的字节数，失败时返回 -1
+          sock    用于传输数据的UDP套接字文件描述符
+          buff    保存待传输数据的缓冲地址值
+          nbytes  待传输的数据长度，以字节为单位
+          flags   可选项参数，若没有则传递0
+          to      存有目标地址信息的sockaddr结构体变量的地址值
+          addrlen 传递给参数to的地址结构体变量长度
+    上述函数与之前的TCP输出函数的最大区别在于，此函数需要向它传递目标地址信息。
+
+    #include <sys/socket.h>
+    ssize_t recvfrom(int sock, void *buff, size_t nbytes, int flags, struct sockaddr *from, socklen_t * addrlen);
+          --> 成功时返回接收的字节数，失败时返回 -1
+          sock    用于接收数据的UDP套接字文件描述符
+          buff    保存接收数据的缓冲地址值
+          nbytes  可接收的最大字节数，故无法超过参数buff所指的缓冲大小
+          flags   可选项参数，若没有则传入0
+          from    存有发送端地址信息的sockaddr结构体变量的地址值
+          addrlen 保存参数from的结构体变量长度的变量地址值
+    
+    4.基于UDP的回声服务器端/客户端
+            uecho_server.c    uecho_client.c
