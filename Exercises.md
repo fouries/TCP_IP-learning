@@ -62,3 +62,14 @@
         sendrecv_serv.c   recvsend_clnt.c
 (6).    
         file_serv.c   recvsend_clnt.c
+
+***Exercise 6.5*** 
+(1).UDP没有流控制机制。由于该控制涉及到套接字的连接和结束，以及整个数据收发过程，因此，TCP传输的数据是可以信赖的,UDP传输是不可靠的，速度比TCP快。
+(2).b c e
+(3).IP负责链路选择， UDP负责端对端的传输
+(4).TCP比UDP慢的原因有以下两点：１．收发数据前后进行的连接设置及清除过程　２．收发数据过程中为保证可靠性而添加的流控制。
+    UDP与TCP不同，不经过连接以及断开SOCKET的过程，因此，在频繁的连接及断开的情况下，UDP的数据收发能力会凸显出更好的性能。
+(5).第一次调用sendto函数时，若发现相应的套接字未分配IP和端口号，则给其相应的套接字自动分配IP和端口号。
+(6).调用connect函数并不意味着要与对方UDP套接字连接，只是向UDP套接字注册目标IP和端口信息。
+　　1.每次调用sendto函数只需传输数据。  2. 不仅可以使用sendto、recvfrom函数，还可以使用write、read函数进行通信。
+(7).    uchar_server.c      uchar_client.c
