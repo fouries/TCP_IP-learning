@@ -677,3 +677,36 @@ Chapter 6  基于UDP的服务器端/客户端
     
     4.基于UDP的回声服务器端/客户端
             uecho_server.c    uecho_client.c
+    
+    5.UDP 客户端套接字的地址分配
+      TCP客户端调用connnect函数自动完成IP和端口号的分配。首次调用sendto函数时自动分配IP和端口号，分配地址一直保持到程序结束。
+    
+6.3 UDP的数据传输特性和调用connect函数
+---    
+    1.存在数据边界的UDP套接字
+      TCP数据传输中国不存在数据边界，这表示“数据传输过程中调用Ｉ/O函数的次数不具有任何意义”
+      UDP是具有数据边界的协议，输入函数的调用次数和输出函数的调用次数完全一致。
+          bound_host1.c     bound_host2.c
+    
+    2.已连接（connected）UDP套接字与未连接（unconnected）UDP套接字
+      TCP套接字中需注册待传数据的目标IP和端口号，而UDP中则无需注册。因此通过sendto函数传递数据的过程大致分为3个阶段。
+      × 第1阶段：向UDP套接字注册目标IP和端口号
+      × 第2阶段：传输数据
+      × 第3阶段：删除UDP套接字中注册的目标地址信息
+      上述三个阶段中，第一个和第三个阶段占整个通信过程近1/3的时间，缩短这部分时间将大大提高整体性能。
+      每次调用sendto函数时重复上述过程。每次都变更目标地址，因此可以重复利用同一UDP套接字向不同目标传输数据。
+    
+    3.创建已连接的UDP套接字
+      创建已连接UDP套接字的过程格外简单，只需针对UDP套接字调用connect函数。
+      sock = socket(PF_INT, SOCK_DGRAM, 0);
+      memset(&addr, 0, sizeof(addr));
+      addr.sin_family = AF_INET;
+      addr.sin_addr.s_addr = ...;
+      addr.sin_port = ...;
+      connect(sock, (struct sockaddr*) &addr, sizeof(addr));
+      UDP套接字调用connect函数并不意味着要与对方UDP套接字连接，这只是向UDP套接字注册目标IP和端口信息。
+      之后就与TCP套接字一样，每次调用sendto函数时只需要传输数据。因此已经指定了收发对象，所以不仅可以使用sendto、recvfrom函数，还可以
+      使用write、read函数进行通信。
+            uecho_con_client.c  uecho_server.c
+    
+    
