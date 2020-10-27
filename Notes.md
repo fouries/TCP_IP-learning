@@ -743,4 +743,48 @@ Chapter 7  优雅地断开套接字连接
 
 7.2 基于Windows的实现
 ---
+      file_server_win.c     file_client_win.c
 
+Chapter 8  域名及网络地址
+===    
+8.1 域名系统
+---
+    DNS是对IP地址和域名进行互相转换的系统，其核心是DNS服务器。
+
+    1.什么是域名
+      提供网络服务的服务器端也是通过IP地址区分的，但几乎不可能以非常难记的ＩP地址形式交换服务端地址信息。因此，将容易记、易表述的域名分配并取代IP地址。
+    
+    2.DNS服务器
+      域名是赋予服务器端的虚拟地址，而非实际地址。因此，需要将虚拟地址转化为实际地址。DNS服务器担此重任，可以向DNS服务器请求转换地址。
+
+8.2 IP地址和域名之间的转换
+---
+    1.程序中有必要使用域名吗？
+      IP地址比域名发声变更的概率要高，所以利用IP地址编写程序并非上策，域名可能永久不变，利用域名编写程序时会根据域名获取IP地址，再接入服务器，
+      这样程序就不会依赖于服务器IP地址了。
+    
+    2.利用域名获取IP地址
+      利用以下函数可以通过传递字符串格式的域名获取IP地址
+      ＃include <netdb.h>
+      struct hostent *gethostbyname(const char *hostname);
+          -->　成功时返回　hostent结构体地址，　失败时返回 NULL指针。
+
+      struct hostent
+      {
+        char *h_name;        //official name
+        char **h_aliases;    //alias list
+        int h_addrtype;      //host address type
+        int h_length;        //address length
+        char **h_addr_list;  //address list
+      }
+
+      ×  h_name: 该变量中存有官方域名（Official domain name）。官方域名各代表某一主页，但一些著名公司并未用官方域名注册。
+      ×  h_aliases: 可以通过多个域名访问同一主页。同一IP可以绑定多个域名，因此，除官方域名外还可以指定其他域名。这些信息可以通过h_aliases获得。
+      ×  h_addrtype: gethostbyname函数不仅支持IPv4，还支持IPv6。因此可以通过此变量获取保存在h_addr_list的IP地址的地址族信息。若是IPv4，此变量存有AF_INET。
+      ×  h_length: 保存IP地址长度。若是IPv4地址，因为是4字节，则保存4；IPv6时，因为是16字节，故保存16。
+      ×  h_addr_list: 这是最重要的成员。通过此变量以整数形式保存域名对应的IP地址。另外，用户较多的网站可能分配多个IP给同一域名，利用多个服务器进行负载均衡。
+         此时同样可以通过此变量获取IP地址信息。
+
+              gethostbyname.c
+
+    ３．利用IP地址获取域名
