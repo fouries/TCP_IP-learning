@@ -848,14 +848,23 @@ Chapter 9  套接字的多种可选项
           optlen   向第四个参数optval传递的可选项信息的字节数
       
             sock_type.c     setsockopt在其他函数中给出
-    
+      用于验证套接字类型的 SO_TYPE是典型的只读可选项， 套接字类型只能在创建时决定，以后不能再更改。
+
     3.SO_SNDBUF & SO_RCVBUF
       前面介绍过，创建套接字将同时生成I/O缓冲。（自动创建）
       SO_RCVBUF是输入缓冲大小相关的可选项，SO_SNDBUF是输出缓冲大小的相关可选项。用这2个可选项既可以读取当前I/O缓冲大，
     也可以进行更改。通过下列实例读取创建套接字时默认的I/O缓冲大小。
-            get_buf.c
+            get_buf.c       set_buf.c
     
 9.2 SO_REUSEADDR
 ---
-    可选项 SO_REUSEADDR及其相关的Time-wait状态很重要，务必理解并掌握。
+    可选项 SO_REUSEADDR及其相关的 Time-wait状态很重要，务必理解并掌握。
+
+    1.发生地址分配错误（Binding Error）
+      学习 SO_REUSEADDR可选项之前，应理解好 Time_wait状态。
+            reuseadr_eserver.c
+      客户端和服务器端连接，先断开服务器端会出现问题。如果用同一端口号重新运行服务器端，将输出 "bind() error"消息，并且无法再次运行。
+
+    2.Time-wait状态
+
     
