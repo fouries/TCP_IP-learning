@@ -787,4 +787,75 @@ Chapter 8  域名及网络地址
 
               gethostbyname.c
 
-    ３．利用IP地址获取域名
+    3．利用IP地址获取域名
+              gethostbyaddr.c
+
+Chapter 9  套接字的多种可选项
+===
+9.1 IP地址和域名之间的转换
+---
+    1.套接字可选项和I/O缓冲大小
+      我们之前写的程序都是创建好套接字后（未经特别操作）直接使用的，此时通过默认的套接字特性进行数据通信。
+                        表9.1  可设置套接字的多种可选项
+      --------------------------------------------------------------------------------
+        协议层                    选项名                  读取                    设置
+      --------------------------------------------------------------------------------
+                                SO_SNDBUF                 O                       O
+                                SO_RCVBUF                 O                       O       
+                                SO_REUSEADDR              O                       O
+                                SO_KEEPALIVE              O                       O
+        SOL_SOCKET              SO_BROADCAST              O                       O
+                                SO_DONTRROUTE             O                       O
+                                SO_OOBINLINE              O                       O
+                                SO_ERROR                  O                       X
+                                SO_TYPE                   O                       X
+      --------------------------------------------------------------------------------
+                                IP_TOS                    O                       O
+                                IP_TTL                    O                       O
+        IPPROTO_IP              IP_MULTICAST_TTL          O                       O
+                                IP_MULTICAST_LOOP         O                       O
+                                IP_MULTICAST_IF           O                       O
+      --------------------------------------------------------------------------------
+                                TCP_KEEPALIVE             O                       O
+        IPPROTO_TCP             TCP_NODELAY               O                       O
+                                TCP_MAXSSEG               O                       O
+      --------------------------------------------------------------------------------
+    
+      从表9-1可以看出，套接字可选项是分层的。IPPROTO_IP层可选项是IP协议相关事项，IPPROTO_TCP层可选项是TCP协议相关的事项，
+      SOL_SOCKET层是套接字相关的通用可选项。
+    
+    2.getsockopt & setsockopt
+      我们几乎可以针对表9-1中的所有可选项进行读取（Get）和设置（Set）。（当然，有些可选项只能进行一种操作）。
+   
+      #include <sys/socket.h>
+      int getsockopt(int sock, int level, int optname, void* optval, socklen_t *optlen);
+        --> 成功时返回 0，失败时返回 -1。
+          sock     用于查看套接字文件描述符
+          level    要查看的可选项的协议层
+          optname  要查看的可选项名
+          optval   保存查看结果的缓冲地址值
+          optlen   向第四个参数optval传递的缓冲大小。调用函数后，该变量中保存通过第四个参数返回的可选项信息的字节数
+      
+      上述函数用于读取套接字可选项，并不难。 下面是更改可选项时调用的函数
+
+      #include <sys/socket.h>
+      int setsockopt(int sock, int level, int optname, const void* optval, socklen_t optlen);
+        --> 成功时返回 0，失败时返回 -1。
+          sock     用于更改可选项的套接字文件描述符
+          level    要更改的可选项协议层
+          optname  要更改的可选项名
+          optval   保存要更改的选项信息的缓冲地址值
+          optlen   向第四个参数optval传递的可选项信息的字节数
+      
+            sock_type.c     setsockopt在其他函数中给出
+    
+    3.SO_SNDBUF & SO_RCVBUF
+      前面介绍过，创建套接字将同时生成I/O缓冲。（自动创建）
+      SO_RCVBUF是输入缓冲大小相关的可选项，SO_SNDBUF是输出缓冲大小的相关可选项。用这2个可选项既可以读取当前I/O缓冲大，
+    也可以进行更改。通过下列实例读取创建套接字时默认的I/O缓冲大小。
+            get_buf.c
+    
+9.2 SO_REUSEADDR
+---
+    可选项 SO_REUSEADDR及其相关的Time-wait状态很重要，务必理解并掌握。
+    
