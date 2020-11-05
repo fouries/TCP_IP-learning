@@ -16,5 +16,6 @@
         "sstream": "cpp",
         "streambuf": "cpp",
         "cstdlib": "cpp"
-    }
+    },
+    "C_Cpp.dimInactiveRegions": false
 }
