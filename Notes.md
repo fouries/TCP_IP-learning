@@ -866,5 +866,42 @@ Chapter 9  套接字的多种可选项
       客户端和服务器端连接，先断开服务器端会出现问题。如果用同一端口号重新运行服务器端，将输出 "bind() error"消息，并且无法再次运行。
 
     2.Time-wait状态
-
+      只有先断开连接的（先发送FIN消息的）主机才会经过 Time-wait状态。因此，若服务器端先断开连接，则无法立即重新运行。套接字处在 Time-wait过程时，
+    相应端口是正在使用状态。因此，就像之前验证过得，bind函数调用过程中当然会发生错误。
     
+      × 先断开连接的套接字必然会经过 Time-wait过程。但无需考虑客户端 Time-wait状态。因为客户端套接字是任意指定的。
+    
+    3.地址再分配
+      在主机A如果四次握手的过程中，如果最后数据丢失，则主机B会认为主机A未能收到自己发送的FIN消息，因此重传。这时，收到FIN消息的主机A将重启Time-wait
+    计时器。因此，如果网络状况不理想，Time-wait状态将持续。
+      解决方案就是在套接字的可选项中更改 SO_REUSEADDR的状态。SO_REUSEADDR的默认值为0（假）。
+    
+9.3 TCP_NODELAY
+---
+    1.Nagle算法
+      为防止因数据包过多而发生网络过载，Nagle算法在1984年诞生。
+      × TCP套接字默认使用Nagle算法交换数据，因此最大限度地进行缓冲，直到收到ACK。
+      × 共需传递4个数据包以传输1个字符串。
+      × 一般情况下，不使用Nagle算法可以提高传输速度。但如果无条件放弃使用Nagle算法，就会增加过多的网络流量，反而会影响传输。
+      × 因此，未准确判断数据特性时不应禁用Nagle算法。 
+
+    2.禁用Nagle算法
+      “大文件数据” 应禁用 Nagle算法。换言之，如果有必要，就应禁用Nagle算法。
+      × “Nagle算法使用与否在网络流量上差别不大，使用Nagle算法的传输速度更慢”
+
+      禁用方法: 只需将套接字可选项 TCP_NODELAY改为1（真）即可。
+
+      int opt_val = 1;
+      setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void*) &optval, sizeof(opt_val));
+      
+      可以通过TCP_NODELAY的值查看Nagle算法的设置状态。
+
+      int opt_val;
+      socklen_t opt_len;
+      opt_len = sizeof(opt_val);
+      getsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void*) &optval, &opt_len);
+
+9.4 基于Windows的实现
+---
+          buf_win.c
+
