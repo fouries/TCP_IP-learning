@@ -994,5 +994,45 @@ Chapter 10  多进程服务器端
     
 10.3 信号处理
 ---    
-    1.
+    1.向操作系统求助
+      子进程终止的识别主体是操作系统。 信号处理（Signal Handling）机制。此处的“信号”是在特定事件发生时由操作系统向进程发送的消息。
+    为了响应该消息，执行与消息相关的自定义操作的过程称为“处理”或“信号处理”。
+
+    2.关于JAVA的题外话：保持开放思维
+      JAVA为了保持平台的移植性，以独立于操作系统的方式提供进程和线程的创建方法。因此JAVA在语言层面支持进程和线程的创建。
+      如果有机会，可以尝试JAVA网络编程，而不仅仅局限于Linux或Windows。
+    
+    3.信号和signal函数
+    
+      #include <signal.h>
+      void (*signal(int signo, void (*func)(int)))(int);
+          --> 为了在产生信号时调用，返回之前注册的函数指针。
+
+      × 函数名：signal
+      × 参数：int signo, void (*func)(int)
+      × 返回类型：参数类型为int型，返回void型函数指针
+    
+      第一个参数为特殊情况信息，第二个参数为特殊情况下将要调用的函数的地址值（指针）。发生第一个参数代表的情况时，调用第二个参数所指的函数。
+      × SIGALRM:  已到通过调用alarm函数注册的时间。
+      × SIGINT:   输入 ctrl+C。
+      × SIGCHLD:  子进程终止。
+
+      1>.“子进程终止则调用mychild函数。”    此时mychild函数参数应为int，返回值应为void。 常数SIGCHLD定义了子进程终止的情况，signal的第一参数。
+            signal(SIGCHLD, mychild);
+      2>.“已到通过alarm函数注册的时间，请调用timeout函数。” “输入CTRL+C时调用keycontol函数”
+            signal(SIGALRM, timeout);
+            signal(SIGINT, keycontol);  
+      
+      以上就是信号注册过程。注册好信号后，发生注册信号时（注册的情况发生时），操作系统将调用该信号对应的函数。下面先介绍alarm函数。
+
+      #include<unistd.h>
+      unsigned int alarm(unsigned int seconds);
+            --> 返回 0或以秒为单位的距 SIGALRM信号发生所剩时间。
+    
+      × 如果调用该函数的同时向它传递一个正整数型参数，响应时间后（以秒为单位）将产生 SIGALRM信号。若向该函数传递0,则之前对SIGALRM信号的预约将取消。
+      如果通过该函数预约信号后未指定该信号对应的处理函数，则（通过调用signal函数）终止进程，不做任何处理。
+              signal.c
+              
+    4.
+
     
