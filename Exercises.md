@@ -93,3 +93,71 @@
 (1). acd
 (2). 网络流量未受太大影响时，不使用Nagle算法要比使用它时传输速度快。最典型的是 “传输大文件数据”。将文件数据传入输出缓冲不会花太多时间，因此，即使不使用
     Nagle算法，也会在装满输出缓冲时传输数据包。这不仅不会增加数据包的数量，反而会在无需等待ACK的前提下连续传输，因此可以大大提高传输速度。
+
+***Exercise 10.6***
+(1).cd
+(2).acd
+(3). *测试代码如下：*
+```
+    #include <stdio.h>
+    #include <unistd.h>
+    #include <sys/socket.h>
+
+    int main(void)
+    {
+        int pid;
+        int sockfd = socket(PF_INET, SOCK_STREAM, 0);
+
+        pid = fork();
+
+        if(pid == 0)
+            printf("Child process ID: %d\n", sockfd);
+        else
+            printf("Parent process ID: %d\n", sockfd);
+        
+        return 0;
+    }
+
+    Output: 
+            Child process ID: 3
+            Parent process ID: 3
+```
+(4).僵尸进程是子进程。当子进程结束时，其返回值会传到操作系统，直到返回值被父进程接收为止，该进程一直作为僵尸进程存在。所以为了防止这种情况
+发生，父进程必须明确接收子进程结束时的返回值。
+(5).
+
+```
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <unistd.h>
+    #include <signal.h>
+
+    void ask_exit(int sig)
+    { 
+        char a;
+        puts("Exit? Press y to confirm ", stdout);
+        scanf("%c", &a);
+        if((a == 'y')||a == 'Y')
+            exit(1);
+    }
+
+    int main()
+    {
+
+        struct sigaction act;
+
+        act.sa_handler = ask_exit;
+        sigemptyset(&act.sa_mask);
+        act.sa_flags = 0;
+        sigaction(SIGINT, &act, 0);
+
+        while(1)
+        {
+            printf("Output a simple string.\n");
+            sleep(1);
+        }
+
+        return 0;
+    }
+```
+
