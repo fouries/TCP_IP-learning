@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     serv_addr.sin_port = htons(atoi(argv[2]));
 
     if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr))==-1) // 调用 connect函数。若调用该函数引起的连接请求被注册到服务器端等待队列，则connect函数将完成正常调用。
-        error_handling("connect() error!");                                // 因此，即使通过第35行代码输出了连接提示字符串——如果服务器尚未调用accept函数——也不会真正简历服务关系。
+        error_handling("connect() error!");                                // 因此，即使通过第35行代码输出了连接提示字符串——如果服务器尚未调用accept函数——也不会真正建立服务关系。
     else
         puts("Connected...........");
     
