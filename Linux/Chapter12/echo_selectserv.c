@@ -49,9 +49,9 @@ int main(int argc, char* argv[])
         timeout.tv_usec = 5000;
 
         if((fd_num = select(fd_max+1, &cpy_reads, 0, 0, &timeout)) == -1)
-            break;
-        if(fd_num == 0)
-            continue;
+            break;          // break; 程序结束
+        if(fd_num == 0)     
+            continue;       // Time out! 返回while重新执行
         
         for(i=0;i<fd_max+1;i++)
         {
