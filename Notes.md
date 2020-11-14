@@ -1314,6 +1314,50 @@ Chapter 13 多种I/O
       
 13.2 readv & writev函数
 ---
+    readv & writev函数有助于提高数据通信效率。
+
     1.使用 send & recv函数
+      readv & writev函数的功能可概括如下：
+        “对数据进行整合传输及发送的函数。”
+      通过 writev函数可以将分散保存多个缓存中的数据一并发送，通过 readv函数可以由多个缓冲分别接收。因此可以通过这两个函数减少I/O函数的调用次数。
       
+      #include <sys/uio.h>
+      ssize_t writev(int filedes, const struct iovec* iov, int iovcnt);
+            --> 成功时返回发送的字节数， 失败时返回 -1。
+        filedes   表示数据传输对象的套接字文件描述符。但该函数并不只是限于套接字，因此，可以像read函数一样向其传递文件或标准输出描述符。
+        iov       iovec结构体数组的地址值，结构体iovec中包含待发送数据的为止和大小信息。
+        iovcnt    向第二个参数传递的数组长度。
+    
+      上述函数的第二个参数中出现的数组iovec结构体的声明如下。
       
+      struct iovec
+      {
+          void* iov_base;   // 缓冲地址
+          size_t iov_len;   // 缓冲大小
+      }
+
+      可以看到，结构体iovec由保存待发送数据额缓冲（char型数组）地址值和实际发送的数据长度信息构成。
+      writev( 1,  ptr,  2 );
+      writev的第一个参数1是文件描述符，因此向控制台输出数据，ptr是存有待发送数据信息的iovec数组指针。第三个参数为2，因此，从ptr指向的地址开始，共浏览
+    2个iovec结构体变量，发送这些指针指向的缓冲数据。
+            writev.c
+      
+      下面介绍readv函数，它与writev函数正好相反。
+
+      #include <sys/uio.h>
+      ssize_t readv(int filedes, const struct* iov, int iovcnt);
+          --> 成功时返回接收的字节数， 失败时返回 -1。
+        filedes   传递接收数据的文件（或套接字）描述符。
+        iov       包含数据保存位置和大小信息的iovec结构体数组的地址值。
+        iovcnt    第二个参数中数组的长度。
+      
+      直接通过示例给出readv函数的使用方法。
+            readv.c
+
+    2.合理使用 readv & writev函数
+      需要传输的数据分别位于不同缓冲（数组）时，需要多次调用write函数.此时可以通过一次writev函数调用代替，当然会提高效率。
+      需要将输入缓冲中的数据读入不同位置时，可以不必多次调用read函数，而是利用1此readv函数就能大大提高效率。
+      即使从C语言的角度看，减少了函数的调用次数能相应提高性能。但其更大的意义在于减少数据包个数。假设为了提高效率而在服务器端明确阻止了Nagle算法。其实writev函数
+    在不采取Nagle算法时更有价值。
+
+  
