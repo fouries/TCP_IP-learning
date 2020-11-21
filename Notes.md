@@ -1529,7 +1529,7 @@ Chapter 16 关于I/O流分离的其他内容
         ×　通过区分I/O缓冲提高缓冲性能。
       “流”　分离的方法、情况（目的）不同时，带来的好处也有所不同。
     
-    ３.“流” 分离所带来的EOF问题
+    3.“流” 分离所带来的EOF问题
       shutdown(sock, SHUT_WR); 调用shutdown函数的基于半关闭的EOF传递方法。第10章的 “流”分离没有问题。第15章的基于fdopen函数的 “流”则不同。
 
             sep_serv.c      sep_clnt.c
@@ -1538,24 +1538,151 @@ Chapter 16 关于I/O流分离的其他内容
     
 16.2 文件描述符的复制和半关闭
 ---
-  1.终止“流”时无法半关闭的原因
-    读模式的FILE指针和写模式的FILE指针都是基于同一文件描述符创建的。针对任意一个FILE指针调用fclose函数时都会关闭文件描述符，也就是终止套接字。
-  
-  2.复制文件描述符
-    为了访问同一文件或套接字，创建另一个文件描述符。（不复制文件描述符整数值）
-
-  3.dup & dup2
+    1.终止“流”时无法半关闭的原因
+      读模式的FILE指针和写模式的FILE指针都是基于同一文件描述符创建的。针对任意一个FILE指针调用fclose函数时都会关闭文件描述符，也就是终止套接字。
     
-    #include <unistd.h>
-    int dup(int fildes);
-    int dup2(int fildes, int fildes2);
-        --> 成功时返回复制的文件描述符，失败时返回 -1。
-        fildes   需要复制的文件描述符
-        fildes2  明确指定的文件描述符整数值
+    2.复制文件描述符
+      为了访问同一文件或套接字，创建另一个文件描述符。（不复制文件描述符整数值）
 
-    dup2函数明确指定复制的文件描述符整数值。向其传递大于0且小于进程能生成的最大文件描述符值。
-        dup.c
+    3.dup & dup2
+      
+      #include <unistd.h>
+      int dup(int fildes);
+      int dup2(int fildes, int fildes2);
+          --> 成功时返回复制的文件描述符，失败时返回 -1。
+          fildes   需要复制的文件描述符
+          fildes2  明确指定的文件描述符整数值
 
-  4.复制文件描述符后 “流”的分离
+      dup2函数明确指定复制的文件描述符整数值。向其传递大于0且小于进程能生成的最大文件描述符值。
+          dup.c
+
+    4.复制文件描述符后 “流”的分离
         sep_serv2.c
       “无论复制出多少文件描述符，均应调用shutdown函数发送EOF并进入半关闭状态。”
+
+Chapter 17 优于select的epoll
+===
+17.1 epoll理解及应用
+--- 
+    select复用无论如何优化程序性能也无法同时接入上百个客户端。这种select方式并不适合以Web服务器端开发为主流的现代开发环境。所以学习Linux下的epoll
+    
+    1.基于select的I/O复用技术速度慢的原因
+      × 调用select函数后常见的针对所有文件描述符的循环语句。
+      × 每次调用select函数时都需要想该函数传递监视对象信息。
+      “每次调用select函数时向操作系统传递监视对象信息” 将对程序造成很大负担，而且无法通过优化代码解决，因此将成为性能上的致命弱点。
+      select函数与文件描述符有关，更准确的说，是监视套接字变化的函数。而套接字是由操作系统管理的，所以select函数绝对需要借助于操作系统才能完成功能。
+      “仅向操作系统传递1次监视对象，监视范围或内容发生变化时只通知发生变化的事项。” Linux的支持方式是epoll, Windows的支持方式是IOCP。
+
+    2.select也有优点
+      × 服务器端接入者少
+      × 程序应具有兼容性（Linux & Windows）
+    
+    3.实现epoll时必要的函数和结构体
+      能够克服select函数缺点的epoll具有如下优点：
+        × 无需编写以监视状态变化为目的的针对所有文件描述符的循环语句。
+        × 调用对应于select函数的epoll_wait函数时无需每次传递监视对象信息。
+      
+      epoll服务器端实现中需要的3个函数：
+        × epoll_creat: 创建保存epoll文件描述符的空间。
+        × epoll_ctl：向空间注册并销毁文件描述符。
+        × epoll_wait: 与select函数类似，等待文件描述符发生变化。
+      
+      epoll方式中通过如下结构体epoll_event将发生变化的（发生事件的）文件描述符单独集中到一起。
+       
+        struct epoll_event
+        {
+          __uint32_t events;
+          epoll_data_t data;
+        }
+
+        typedef union epoll_data
+        {
+          void * ptr;
+          int fd;
+          __uint32_t u32;
+          __uint64_t u64;
+        } epoll_data_t;
+
+      声明足够大的epoll_event结构体数组后，传递给epoll_wait函数时，发生变化的文件描述符信息将被填入该数组。因此无需像select函数那样针对所有文件描述符进行循环。
+      
+    4.epoll_creat
+      epoll是Linux的2.5.44版内核开始引入的。
+
+      #include <sys/epoll.h>
+      int epoll_creat(int size);
+          --> 成功时返回 epoll文件描述符，失败时返回 -1。
+        size  epoll实例的大小
+    
+      调用epoll_creat函数时创建的文件描述符保存空间称为“epoll例程”， 通过size传递的值决定epoll例程的大小。但该值只是向操作系统提出建议。
+      Linux2.6.8之后内核将完全忽略传入epoll_creat函数的size参数，因此内核会根据情况调整epoll例程的大小。
+
+    5.epoll_ctl
+      生成epoll例程后，应向其内部注册监视对象文件描述符，此时使用epoll_ctl函数。
+      
+      #include <sys/epoll.h>
+      int epoll_ctl(int epfd, int op, int fd, struct epoll_event* event);
+          --> 成功时返回0, 失败时返回 -1。
+        epfd  用于注册对象的epoll例程的文件描述符。
+        op    用于指定监视对象的添加、删除或更改等操作。     
+        fd    需要注册的监视对象文件描述符。
+        event 监视对象的时间类型。
+      
+      epoll_ctl(A, EPOLL_CTL_ADD, B, C);      “epoll例程A中注册文件描述符B，主要目的是监视参数C中的事件。”
+      epoll_ctl(A, EPOLL_CTL_DEL, B, NULL);   “从epoll例程A中删除文件描述符B。”
+
+      op传递的常量及含义：
+        × EPOLL_CTL_ADD： 将文件描述符注册到epoll例程
+        × EPOLL_CTL_DEL:  从epoll例程中删除文件描述符
+        × EPOLL_CTL_MOD： 更改注册的文件描述符的关注事件发生情况
+      
+      函数epoll_event结构体的定义并不显眼，通过调用语句说明该结构体在epoll_ctl函数中的应用。
+       
+        struct epoll_event event;
+        ......
+        event.events = EPOLLIN;     //发生需要读取数据的情况（事情）时
+        event.data.fd = sockfd;
+        epoll_ctl(epfd, EPOLL_CTL_ADD, sockfd, &event);
+        ......
+      
+      上述代码将sockfd注册到epoll例程epfd中，并在需要读取数据的情况下产生响应事件。
+      epoll_event的成员events中可以保存的常量及所指的事件类型。
+        × EPOLLIN： 需要读取数据的情况
+        × EPOLLOUT: 输出缓冲为空，可以立即发送数据的情况。
+        × EPOLLPRI： 收到OOB数据的情况。
+        × EPPOLLRDHUP： 断开连接或半关闭的情况，这在边缘触发方式下非常有用。
+        × EPOLLERR： 发生错误的情况。
+        × EPOLLET： 以边缘触发的方式得到事件通知。
+        × EPOLLONESHOT： 发生一次事件后，相应文件描述符不再收到事件通知。因此需要向epoll_ctl函数的第二个参数传递EPOLL_CTL_MOD,再次设置事件。
+      
+      可以通过位运算同时传递多个上述参数。关于“边缘触发”稍后将单独讲解。
+
+    6.epoll_wait
+      epoll相关函数中默认最后调用该函数。
+
+      #include <sys/epoll.h>
+      int epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout);
+          --> 成功时返回发生事件的文件描述符数，失败时返回 -1。
+        epfd    表示事件发生监视范围的epoll例程的文件描述符。
+        events  保存发生事件的文件描述符集合的结构体地址值。
+        maxevents 第二个参数中可以保存最大事件数。
+        timeout  以1/1000秒为单位的等待时间，传递-1时，一直等待直到发生事件。
+
+      该函数的调用方式如下。需要注意的是，第二个参数所指缓冲需要动态分配。
+        
+        int event_cnt;
+        struct epoll_event * ep_events;
+        .....
+        ep_events = malloc(sizeof(struct epoll_event)* EPOLL_SIZE);   //EPOLL_SIZE是红常量
+        .....
+        event_cnt = epoll_wait(epfd, epoll_events, EPOLL_SIZE, -1);
+        .....
+
+        调用函数后，返回发生事件的文件描述符数，同时在第二个参数所指向的缓冲保存发生事件的文件描述符集合。因此无需像select那样插入针对所有文件描述符的循环。
+
+    7.基于epoll的回声服务器端
+      
+
+
+
+
+
