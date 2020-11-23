@@ -5,9 +5,12 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/epoll.h>
+#include <fcntl.h>
+#include <errno.h>
 
 #define BUF_SIZE 4
 #define EPOLL_SIZE 50
+void setnonblockingmode(int fd);
 void error_handling(char *message);
 
 int main(int argc, char* argv[])
@@ -33,7 +36,6 @@ int main(int argc, char* argv[])
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     serv_addr.sin_port = htons(atoi(argv[1]));
-
     if(bind(serv_sock, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) == -1)
         error_handling("bind() error!");
     if(listen(serv_sock, 5) == -1)
@@ -42,6 +44,7 @@ int main(int argc, char* argv[])
     epfd = epoll_create(EPOLL_SIZE);    //创建文件描述符保存空间称为“epoll例程”
     ep_events = malloc(sizeof(struct epoll_event)*EPOLL_SIZE);  //保存发生事件的文件描述符集合的结构体地址值
 
+    setnonblockingmode(serv_sock);
     event.events = EPOLLIN;     //发生需要读取数据的情况（事件）时
     event.data.fd = serv_sock;
     epoll_ctl(epfd, EPOLL_CTL_ADD, serv_sock, &event);
@@ -62,6 +65,7 @@ int main(int argc, char* argv[])
             {
                 addr_sz = sizeof(clnt_addr);
                 clnt_sock = accept(serv_sock, (struct sockaddr*) &clnt_addr, &addr_sz);
+                setnonblockingmode(clnt_sock);
                 event.events = EPOLLIN|EPOLLET;
                 event.data.fd = clnt_sock;
                 epoll_ctl(epfd, EPOLL_CTL_ADD, clnt_sock, &event);
@@ -69,23 +73,37 @@ int main(int argc, char* argv[])
             }
             else
             {
-                str_len = read(ep_events[i].data.fd, buf, BUF_SIZE);
-                if(str_len == 0)    //  read EOF, close request!
+                while(1)
                 {
-                    epoll_ctl(epfd, EPOLL_CTL_DEL, ep_events[i].data.fd, NULL);
-                    close(ep_events[i].data.fd);
-                    printf("close client: %d \n", ep_events[i].data.fd);
+                    str_len = read(ep_events[i].data.fd, buf, BUF_SIZE);
+                    if(str_len == 0)    //  read EOF, close request!
+                    {
+                        epoll_ctl(epfd, EPOLL_CTL_DEL, ep_events[i].data.fd, NULL);
+                        close(ep_events[i].data.fd);
+                        printf("close client: %d \n", ep_events[i].data.fd);
+                        break;
+                    }
+                    else if(str_len < 0)
+                    {
+                        if(errno == EAGAIN)
+                            break;
+                    }
+                    else
+                    {
+                        write(ep_events[i].data.fd, buf, str_len);   // echo!
+                    }
                 }
-                else
-                {
-                    write(ep_events[i].data.fd, buf, str_len);   // echo!
-                }
-            }
+           }
         }
     }
-    close(serv_sock);
-    close(epfd);
+    close(serv_sock); close(epfd);
     return 0;
+}
+
+void setnonblockingmode(int fd)
+{
+    int flag = fcntl(fd, F_GETFL, 0);
+    fcntl(fd, F_SETFL, flag|O_NONBLOCK);
 }
 
 void error_handling(char *message)
