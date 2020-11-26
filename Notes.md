@@ -1770,6 +1770,41 @@ Chapter 18 多线程服务器端的实现
           start_routine   相当于线程main函数的、在单独执行流中执行的函数地址值（函数指针）。
           arg             通过第三个参数传递调用函数时包含传递参数信息的变量地址值。
 
-    
+            thread1.c
 
-    
+        #include <pthread.h>
+        int pthread_join(pthread_t thread, void** status);
+            --> 成功时返回0， 失败时返回其他值。
+          thread    参数数值ID的线程终止后才会从该函数返回。
+          status    保存线程的main函数返回值的指针变量地址值。
+        
+        调用该函数的进程（或线程）将进入等待状态，直到第一个参数为ID的线程终止为止。而且可以得到线程的main函数返回值。
+            thread2.c
+
+    2.可在临界区内调用的函数
+      “多个线程同时调用函数时（执行时）可能产生问题。”这类函数内部存在临界区（Critical Section）,多个线程同时执行这部分代码时，可能引起问题。临界区中至少存在1条这类代码。
+      根据临界区是否引起问题，函数可分为以下2类：
+        × 线程安全函数（Thread-safe function）
+        × 非线程安全函数（Thread-unsafe function）
+      线程安全函数被多个线程同时调用时也不会引发问题。反之，非线程安全函数被同时调用时会引发问题。
+      大多数标准函数都是线程安全函数。
+        非线程安全函数：  struct hostent* gethostbyname(const char* hostname);
+        同时提供线程安全的同一功能的函数：  struct hostent* gethostbyname_r(
+                                          const char* name, struct hostent* result, char* buffer, int buflen,
+                                              int *h_errnop);
+      线程安全函数名称后缀通常为_r（这与Windows平台不同）。
+      可以通过如下方法自动将gethostbyname函数调用改为gethostbyname_r函数调用！  “声明头文件前定义 _REENTRANT宏。”
+      编译时通过添加 -D_REENTRANT选项定义宏   gcc -D_REENTRANT mythread.c -o mythread -lpthread
+
+    3.工作（Worker）线程模型
+      一个线程计算1到5的和,另一个线程计算6到10的和，main函数只负责输出运算结果。这种模型称为 “工作线程（Worker thread）模型”。
+      计算1到5之和的线程与计算6到10之和的线程将成为main线程管理的工作（Worker）。
+          thread3.c
+      示例本身存在问题。此处存在临界区相关问题。 下面介绍一示例，该示例增加了发生临界区相关错误的可能性，即使在高配置环境下也容易验证产生的错误。
+          thread4.c
+
+
+18.3 线程存在的问题和临界区
+--- 
+    1.多线程访问同一变量是问题
+      
