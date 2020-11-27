@@ -1807,4 +1807,136 @@ Chapter 18 多线程服务器端的实现
 18.3 线程存在的问题和临界区
 --- 
     1.多线程访问同一变量是问题
+      示例thread4.c的问题  “2个线程正在同时访问全局变量num。”  任何内存空间——只要被同时访问——都可能发生问题。
+      线程访问变量num时应该阻止其他线程访问，直到线程1完成运算。这就是同步（Synchronization）。
+    
+    2.临界区位置
+      “函数内同时运行多个线程时引起问题的多条语句构成的代码块。”  临界区通常位于由线程运行的函数内部。
+      void* thread_inc(void* arg)
+      {
+        int i;
+        for(i=0;i<50000000;i++)
+          num += 1;   //临界区
+        return NULL;
+      }
+
+      void* thread_des(void* arg)
+      {
+        int i;
+        for(i=0;i<50000000;i++)
+          num -= 1;   //临界区
+        return NULL;
+      }
+
+      临界区并非num本身，而是访问num的2条语句。这两条语句可能由多个线程同时运行，也是引起问题的直接原因。产生的问题可以整理为如下3种情况：
+        × 2个线程同时执行thread_inc函数。
+        × 2个线程同时执行thread_des函数。
+        × 2个线程分别执行thread_inc函数和thread_des函数。
+
+18.4 线程同步
+--- 
+    解决临界区问题的方法，线程同步。
+    1.同步的两面性
+      线程同步用于解决线程访问顺序引发的问题。需要同步的情况可以从如下两方面考虑。
+        × 需要访问同一内存空间时发生的情况。
+        × 需要指定访问同一内存空间的线程执行顺序的情况。
+      第2种，这是“控制（Control）线程执行顺序”的相关内容。需要控制执行顺序的情况也需要使用同步技术。
+
+    2.互斥量
+      互斥量是 "Mutual Exclusion"的简写，表示不允许多个线程同时访问。互斥量主要用于解决线程同步访问的问题。
+      互斥量就是一把优秀的锁，接下来介绍互斥量的创建及销毁函数。
+      临界区的规则类似于上洗手间。 1.上锁  2.如果有人，需要等待  3.等待的人多，需要排队 
+
+        #include <pthread.h>
+        int pthread_mutex_init(pthread_mutex_t* mutex, const pthread_mutexattr_t* attr);
+        int pthread_mutex_destroy(pthread_mutex_t* mutex);
+            --> 成功时返回0， 失败时返回其他值。
+          mutex   创建互斥量时传递保存互斥量的变量地址值，销毁时传递需要销毁的互斥量地址值。
+          attr    传递即将创建的互斥量属性，没有特别需要指定的属性时传递NULL。
       
+      如果不需要配置特殊的互斥量属性，则向第二个参数传递NULL时，可以利用PTHREAD_MUTEX_INITIALIZER宏进行如下声明：
+          pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+      推荐使用pthread_mutex_init函数进行初始化，因为通过宏进行初始化时很难发现发生的错误。
+      利用互斥量锁住或释放临界区时使用的函数。
+        
+        #include <pthread.h>
+        int pthread_mutex_lock(pthread_mutex_t* mutex);
+        int pthread_mutex_unlock(pthread_mutex_t* mutex);
+            --> 成功时返回0，失败时返回其他值。
+      
+      进入临界区前调用的函数就是pthread_mutex_lock。调用该函数时，发现有其他线程已进入临界区，则pthread_mutex_lock函数不会返回，直到里面的
+    线程调用 pthread_mutex_unlock函数退出临界区为止。也就是说，其他线程让出临界区之前,当前线程将一直处于阻塞状态。
+      创建号互斥量的前提下，可以通过如下结构保护临界区。
+        pthread_mutex_lock(&mutex);
+        // 临界区的开始
+        // ......
+        // 临界区的结束
+        pthread_mutex_unlock(&mutex);
+      简言之，就是利用lock和unlock函数为主临界区的两端。此时互斥相当于一把锁，阻值多个线程同时访问。
+      线程如果退出临界区时，如果忘了调用pthread_mutex_unlock函数，那么其他为了进入临界区而调用pthread_mutex_lock函数的线程就无法摆脱阻塞状态。
+    这种情况称为 “死锁”（Dead-lock）,需要格外注意。
+          mutex.c
+      增大临界区划分范围，这是考虑到 “最大限度减少互斥量lock、unlock函数的调用次数。”
+      如果不太关注线程的等待时间，可以适当扩展临界区。
+
+    3.信号量
+      信号量与互斥量极为相似 “二进制信号量”（只用0和1）完成 “控制信号线程顺序”为中心的同步方法。
+      信号量的创建及销毁方法：
+
+        #include <semaphore.h>
+        int sem_init(sem_t* sem, int pshared, unsigned int value);
+        int sem_destroy(sem_t* sem);
+            --> 成功时返回0， 失败时返回其他值。
+          sem       创建信号量时传递保存信号量的变量地址值，销毁时传递需要销毁的信号量变量地址值。
+          pshared   传递其他值时，创建可由多个进程共享的信号量；传递0时，创建只允许1个进程内部使用的信号量。我们需要完成同一进程内的线程同步，故传递0。
+          value     指定新创建的信号量初试值。
+      
+      信号量中相当于互斥量 lock、unlock的函数。
+          
+        #include <semaphore.h>
+        int sem_post(sem_t* sem);
+        int sem_wait(sem_t* sem);
+            --> 成功时返回0， 失败时返回其他值。
+          sem   传递保存信号量读取值的变量地址值，传递给sem_post时信号量增1，传递给sem_wait时信号量减1。
+        
+      调用sem_init函数时，操作系统和将创建信号量对象，此对象中记录着“信号量值”（Semaphore Value）整数。该值在调用sem_post函数时增1，调用sem_wait函数
+    时减1。但信号量的值不能小于0，因此，在信号量为0的情况下调用sem_wait函数时，调用函数的线程将进入阻塞状态（因为本函数未返回）。当然，此时如果有其他线程调用sem_post函数，
+    信号量的值将变为1，而原本阻塞的线程可以将该信号量重新减为0并跳出阻塞状态。实际上就是通过这种特性完成临界区的同步操作，可以通过如下形式同步临界区（假设信号量的初始值为1）。
+      
+        sem_wait(&sem);   //信号量变为0
+        // 临界区的开始
+        // ......
+        // 临界区的结束
+        set_post(&sem);   //信号量变为1...
+
+      上述代码结构中，调用sem_wait函数进入临界区的线程在调用sem_post函数前不允许其他线程进入临界区。信号量在0和1之间跳转，因此，具有这种特性的机制称为“二进制信号量”。
+      下面介绍示例并非关于同时访问的同步，而是关于控制访问顺序的同步。该实例的场景如下：
+
+        “线程A从用户输入得到值后存入全局变量num,此时线程B将取走该值并累加。该过程共进行5次，完成后输出总和并退出程序。”
+            semaphore.c
+    
+
+18.5 线程的销毁和多线程并发服务器端的实现
+--- 
+    1.销毁线程的3种方法
+      Linux线程并不是在首次调用的线程main函数返回时自动销毁，所以用以下2种方法之一加以明确。否则线程创建的内存空间将一直存在。
+      × 调用pthread_join函数
+      × 调用pthread_detach函数
+      pthread_join函数不仅会等待线程终止，还会引导线程销毁。但是该函数的问题是，线程终止前，调用该函数的线程将进入阻塞状态。可通过如下函数调用引导线程销毁。
+
+      #include <pthread.h>
+      int pthread_detach(pthread_t thread);
+          --> 成功时返回0， 失败时返回其他值。
+        thread 终止的同时需要销毁的线程ID。
+      
+    2.多线程并发服务器端的实现
+      chat_server.c     
+      
+      临界区具有如下特点：  “访问全局变量clnt_cnt和数组clnt_sock的代码将构成临界区！”
+      添加或删除客户端时，变量clnt_cnt和数组clnt_socks同时发声变化。因此，在如下情形中均会导致数据不一致，从而引发严重错误。
+        × 线程A从数组clnt_socks中删除套接字信息，同时线程B读取clnt_cnt变量。
+        × 线程A读取变量clnt_cnt，同时线程B将套接字信息添加到clnt_socks数组。
+      因此，访问变量clnt_cnt和数组clnt_socks的代码应组织在一起并构成临界区。
+          “此处的‘访问’是指值的更改。产生问题的原因可能还有很多，因此需要准确理解。”
+      
+      chat_clnt.c
