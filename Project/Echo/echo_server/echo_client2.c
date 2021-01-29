@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
         fgets(message, BUF_SIZE, stdin);
 
         if(!strcmp(message, "q\n") || !strcmp(message, "Q\n"))
-            break;`
+            break;
         
         // Step3： 调用write()/read()函数，进行数据交换
         str_len = write(sock, message, strlen(message));
